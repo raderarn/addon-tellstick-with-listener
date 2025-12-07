@@ -28,22 +28,29 @@ RUN apt-get update && apt-get install -y \
 # Install Bashio (krävs för HA add-ons)
 # ----------------------------------------------------------
 
-# Hämta bashio till den katalog som HA förväntar sig
-RUN git clone https://github.com/hassio-addons/bashio.git /usr/lib/bashio && \
-    chmod -R +x /usr/lib/bashio
-
 # ----------------------------------------------------------
-# Bekvämlighets-symlinks (du hade detta och det är ok)
+# Install Bashio 
 # ----------------------------------------------------------
 
-# skapa symlinks för alla hjälpshellscripts
-RUN mkdir -p /usr/local/bin && \
-    for f in /usr/lib/bashio/lib/*.sh; do \
+RUN git clone https://github.com/hassio-addons/bashio.git /usr/local/lib/bashio && \
+    mkdir -p /usr/local/bin && \
+    \
+    # symlinks för hjälpskript
+    for f in /usr/local/lib/bashio/lib/*.sh; do \
         ln -sf "$f" /usr/local/bin/$(basename "$f"); \
-    done
+    done && \
+    \
+    # symlink för bashio själv
+    ln -sf /usr/local/lib/bashio/lib/bashio.sh /usr/local/bin/bashio && \
+    \
+    chmod +x /usr/local/bin/*.sh /usr/local/bin/bashio
 
-RUN ln -sf /usr/lib/bashio/bashio.sh /usr/local/bin/bashio && \
-    chmod +x /usr/local/bin/bashio
+# ----------------------------------------------------------
+# Home Assistant kompatibilitet
+# ----------------------------------------------------------
+
+RUN mkdir -p /usr/lib && \
+    ln -s /usr/local/lib/bashio /usr/lib/bashio
 
 # ----------------------------------------------------------
 # Installera S6-overlay (fungerande version)
