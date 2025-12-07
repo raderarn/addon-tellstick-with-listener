@@ -1,4 +1,5 @@
 #!/command/with-contenv bashio
+s6-setuidgid root
 
 if bashio::config.true "enable_local"; then
 bashio::log.info "Local enabled. Exposing sockets to HomeAssistant..."
