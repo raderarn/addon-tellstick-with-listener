@@ -25,8 +25,10 @@ RUN apt-get update && apt-get install -y \
  && rm -rf /var/lib/apt/lists/*
 
 # ----------------------------------------------------------
-# Installera S6-overlay
+# Installera S6-overlay (fungerande version)
 # ----------------------------------------------------------
+ARG S6_VER=3.2.1.0
+
 RUN case "$BUILD_ARCH" in \
       amd64)   S6_ARCH=x86_64 ;; \
       armhf)   S6_ARCH=armhf ;; \
@@ -34,9 +36,13 @@ RUN case "$BUILD_ARCH" in \
       aarch64) S6_ARCH=aarch64 ;; \
       *) echo "Unsupported arch: $BUILD_ARCH"; exit 1 ;; \
     esac && \
-    wget -O /tmp/s6.tar.xz \
+    wget -O /tmp/s6-noarch.tar.xz \
+      https://github.com/just-containers/s6-overlay/releases/download/v${S6_VER}/s6-overlay-noarch.tar.xz && \
+    wget -O /tmp/s6-arch.tar.xz \
       https://github.com/just-containers/s6-overlay/releases/download/v${S6_VER}/s6-overlay-${S6_ARCH}.tar.xz && \
-    tar -C / -Jxpf /tmp/s6.tar.xz && rm /tmp/s6.tar.xz && \
+    tar -C / -Jxpf /tmp/s6-noarch.tar.xz && \
+    tar -C / -Jxpf /tmp/s6-arch.tar.xz && \
+    rm /tmp/s6-*.tar.xz && \
     mkdir -p /run /data /etc/services.d
 
 # ----------------------------------------------------------
