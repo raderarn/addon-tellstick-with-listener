@@ -9,4 +9,4 @@ fi
 
 bashio::log.info "Loading Telldus service..."
 
-exec /usr/local/sbin/telldusd --nodaemon
+exec /usr/sbin/telldusd --nodaemon
