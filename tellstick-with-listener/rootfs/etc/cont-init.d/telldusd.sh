@@ -7,7 +7,7 @@ CONFIG="/etc/tellstick.conf"
 bashio::log.info "Initialize the tellstick configuration..."
 # User access
 {
-    echo "user = \"root\""
+    echo "user = \"nobody\""
     echo "group = \"plugdev\""
     echo "ignoreControllerConfirmation = \"false\"" 
 } > "${CONFIG}"
