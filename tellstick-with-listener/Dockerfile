@@ -1,14 +1,22 @@
+# ----------------------------------------------------------
+# Debian Buster base
+# ----------------------------------------------------------
+
 FROM debian:buster
 
 ARG BUILD_ARCH
-ARG S6_VER=3.2.0.2
+ARG S6_VER=3.2.0.9
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 ENV LANG=C.UTF-8 \
     DEBIAN_FRONTEND=noninteractive
 
-# Install S6
+# ----------------------------------------------------------
+# Install S6-overlay
+# ----------------------------------------------------------
+
+# map arch → s6 arch
 RUN case "$BUILD_ARCH" in \
       amd64)   S6_ARCH=x86_64 ;; \
       armhf)   S6_ARCH=armhf ;; \
@@ -16,13 +24,19 @@ RUN case "$BUILD_ARCH" in \
       aarch64) S6_ARCH=aarch64 ;; \
       *) echo "Unsupported arch $BUILD_ARCH"; exit 1 ;; \
     esac && \
-    wget -O /tmp/s6.tar.gz \
-      https://github.com/just-containers/s6-overlay/releases/download/v${S6_VER}/s6-overlay-${S6_ARCH}.tar.gz && \
-    tar xzf /tmp/s6.tar.gz -C / && \
-    rm /tmp/s6.tar.gz
+    echo "Using S6 arch $S6_ARCH"
+
+# download (note: noarch + arch specific)
+ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_VER}/s6-overlay-noarch.tar.xz /tmp/
+ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_VER}/s6-overlay-${S6_ARCH}.tar.xz /tmp/
+
+RUN tar -C / -Jxpf /tmp/s6-overlay-noarch.tar.xz && \
+    tar -C / -Jxpf /tmp/s6-overlay-${S6_ARCH}.tar.xz && \
+    rm /tmp/*.tar.xz && \
+    mkdir -p /run /data /etc/services.d
 
 # ----------------------------------------------------------
-# Basic system + build deps
+# Basic deps
 # ----------------------------------------------------------
 
 RUN apt-get update && apt-get install -y \
@@ -35,45 +49,31 @@ RUN apt-get update && apt-get install -y \
  && rm -rf /var/lib/apt/lists/*
 
 # ----------------------------------------------------------
-# Install S6-overlay
-# ----------------------------------------------------------
-
-# required by HA
-ARG BUILD_ARCH
-
-# choose version
-ARG S6_VER=3.2.0.2
-
-# install overlay
-ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_VER}/s6-overlay-${BUILD_ARCH}.tar.gz /tmp/s6.tar.gz
-RUN tar xzf /tmp/s6.tar.gz -C / \
- && rm /tmp/s6.tar.gz \
- && mkdir -p /run /data /etc/services.d
-
-# ----------------------------------------------------------
 # Addon files
 # ----------------------------------------------------------
 
 COPY rootfs/ /
 
-RUN chmod +x /usr/local/bin/td.py /usr/local/bin/tdtool-improved.py
+RUN chmod +x /usr/local/bin/td.py \
+ && chmod +x /usr/local/bin/tdtool-improved.py
 
 # ----------------------------------------------------------
-# Install old libconfuse required by telldus-core
+# Old libconfuse needed by telldus-core
 # ----------------------------------------------------------
 
 ADD http://ftp.bme.hu/debian-archive/debian-amd64/pool/main/c/confuse/libconfuse0_2.5-1_amd64.deb /tmp/libconfuse.deb
 RUN dpkg -i /tmp/libconfuse.deb || apt-get -f install -y
 
 # ----------------------------------------------------------
-# Telldus apt repo
+# Telldus repo + install
 # ----------------------------------------------------------
 
 RUN wget -O- http://download.telldus.com/debian/telldus-public.key \
     | gpg --dearmor \
     > /usr/share/keyrings/telldus.gpg
 
-RUN echo "deb [signed-by=/usr/share/keyrings/telldus.gpg] http://download.telldus.com/debian/ stable main" \
+RUN echo "deb [signed-by=/usr/share/keyrings/telldus.gpg] \
+http://download.telldus.com/debian/ stable main" \
     > /etc/apt/sources.list.d/telldus.list
 
 RUN apt-get update && apt-get install -y \
@@ -86,20 +86,22 @@ RUN apt-get update && apt-get install -y \
 
 RUN pip3 install --no-cache-dir tellcore-py
 
-RUN cd /usr/src \
- && git clone --depth 1 https://github.com/erijo/tellive-py.git \
- && cd tellive-py \
- && python3 setup.py install
+RUN cd /usr/src && \
+    git clone --depth 1 https://github.com/erijo/tellive-py.git && \
+    cd tellive-py && \
+    python3 setup.py install
 
 # ----------------------------------------------------------
-# Python2 symlinks (som du hade)
+# Python2 symlinks
 # ----------------------------------------------------------
 
-RUN ln -s /usr/local/bin/td.py /usr/local/lib/python2.7/dist-packages/td.py && \
-    ln -s /usr/local/bin/tdtool-improved.py /usr/local/lib/python2.7/dist-packages/tdtool_improved.py
+RUN ln -s /usr/local/bin/td.py \
+        /usr/local/lib/python2.7/dist-packages/td.py && \
+    ln -s /usr/local/bin/tdtool-improved.py \
+        /usr/local/lib/python2.7/dist-packages/tdtool_improved.py
 
 # ----------------------------------------------------------
-# Required for HA addon
+# HA required
 # ----------------------------------------------------------
 
 ENTRYPOINT ["/init"]
