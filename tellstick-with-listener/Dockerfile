@@ -24,9 +24,23 @@ RUN apt-get update && apt-get install -y \
       wget ca-certificates tar git xz-utils jq \
  && rm -rf /var/lib/apt/lists/*
 
-ARG S6_VER=v3.2.0.2
-ADD https://github.com/just-containers/s6-overlay/releases/download/${S6_VER}/s6-overlay-amd64.tar.gz /tmp/
-RUN tar xzf /tmp/s6-overlay-amd64.tar.gz -C /
+ARG S6_VER=3.2.0.2
+
+RUN case "$BUILD_ARCH" in \
+      amd64)   S6_ARCH=x86_64 ;; \
+      armhf)   S6_ARCH=armhf ;; \
+      armv7)   S6_ARCH=armhf ;; \
+      aarch64) S6_ARCH=aarch64 ;; \
+      *) echo "Unsupported arch"; exit 1 ;; \
+    esac && \
+    wget -qO /tmp/s6-noarch.tar.xz \
+      https://github.com/just-containers/s6-overlay/releases/download/v${S6_VER}/s6-overlay-noarch.tar.xz && \
+    wget -qO /tmp/s6-arch.tar.xz \
+      https://github.com/just-containers/s6-overlay/releases/download/v${S6_VER}/s6-overlay-${S6_ARCH}.tar.xz && \
+    tar -C / -Jxpf /tmp/s6-noarch.tar.xz && \
+    tar -C / -Jxpf /tmp/s6-arch.tar.xz && \
+    rm /tmp/s6-*.tar.xz && \
+    mkdir -p /run /data /etc/services.d
 
 # ----------------------------------------------------------
 # Install Bashio
