@@ -13,7 +13,8 @@ bashio::log.info "Initialize the tellstick configuration..."
 } > "${CONFIG}"
 
 # devices
-for device in $(bashio::config 'devices|keys'); do
+count=$(bashio::config 'devices|length')
+for device in $(seq 0 $((count-1))); do
     DEV_ID=$(bashio::config "devices[${device}].id")
     DEV_NAME=$(bashio::config "devices[${device}].name")
     DEV_PROTO=$(bashio::config "devices[${device}].protocol")
