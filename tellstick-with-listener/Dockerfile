@@ -1,13 +1,25 @@
-# ----------------------------------------------------------
-# Debian Buster + Telldus + Python2/3 + S6-overlay
-# ----------------------------------------------------------
-
 FROM debian:buster
+
+ARG BUILD_ARCH
+ARG S6_VER=3.2.0.2
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 ENV LANG=C.UTF-8 \
     DEBIAN_FRONTEND=noninteractive
+
+# Install S6
+RUN case "$BUILD_ARCH" in \
+      amd64)   S6_ARCH=x86_64 ;; \
+      armhf)   S6_ARCH=armhf ;; \
+      armv7)   S6_ARCH=armhf ;; \
+      aarch64) S6_ARCH=aarch64 ;; \
+      *) echo "Unsupported arch $BUILD_ARCH"; exit 1 ;; \
+    esac && \
+    wget -O /tmp/s6.tar.gz \
+      https://github.com/just-containers/s6-overlay/releases/download/v${S6_VER}/s6-overlay-${S6_ARCH}.tar.gz && \
+    tar xzf /tmp/s6.tar.gz -C / && \
+    rm /tmp/s6.tar.gz
 
 # ----------------------------------------------------------
 # Basic system + build deps
