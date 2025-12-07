@@ -9,11 +9,13 @@ ENV LANG=C.UTF-8 DEBIAN_FRONTEND=noninteractive
 # ----------------------------------------------------------
 # Peka om till Debian archive (efter EOL)
 # ----------------------------------------------------------
-RUN sed -i 's|deb.debian.org|archive.debian.org|g' /etc/apt/sources.list \
- && sed -i 's|security.debian.org|archive.debian.org|g' /etc/apt/sources.list \
- && sed -i '/buster-updates/d' /etc/apt/sources.list \
- && sed -i '/buster\\/updates/d' /etc/apt/sources.list \
- && echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99no-check
+RUN cat <<EOF > /etc/apt/sources.list
+deb http://archive.debian.org/debian buster main contrib non-free
+deb http://archive.debian.org/debian-security buster/updates main
+EOF
+
+RUN echo 'Acquire::Check-Valid-Until "false";' \
+      > /etc/apt/apt.conf.d/99no-check
 
 # ----------------------------------------------------------
 # Installera grundläggande verktyg (så du får wget, ca-certificates etc.)
