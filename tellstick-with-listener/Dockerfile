@@ -12,26 +12,25 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ENV LANG=C.UTF-8 \
     DEBIAN_FRONTEND=noninteractive
 
-# ----------------------------------------------------------
-# Install S6-overlay
-# ----------------------------------------------------------
-
-# map arch → s6 arch
+# map arch
 RUN case "$BUILD_ARCH" in \
-      amd64)   S6_ARCH=x86_64 ;; \
-      armhf)   S6_ARCH=armhf ;; \
-      armv7)   S6_ARCH=armhf ;; \
-      aarch64) S6_ARCH=aarch64 ;; \
-      *) echo "Unsupported arch $BUILD_ARCH"; exit 1 ;; \
-    esac && \
-    echo "Using S6 arch $S6_ARCH"
+      amd64)   echo "x86_64" > /tmp/s6arch ;; \
+      armhf)   echo "armhf"  > /tmp/s6arch ;; \
+      armv7)   echo "armhf"  > /tmp/s6arch ;; \
+      aarch64) echo "aarch64"> /tmp/s6arch ;; \
+      *) echo "Unsupported arch"; exit 1 ;; \
+    esac
 
-# download (note: noarch + arch specific)
+# read computed arch
+ARG S6_ARCH
+RUN export S6_ARCH=$(cat /tmp/s6arch) && echo "S6 arch = $S6_ARCH"
+
+# install S6
 ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_VER}/s6-overlay-noarch.tar.xz /tmp/
-ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_VER}/s6-overlay-${S6_ARCH}.tar.xz /tmp/
+ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_VER}/s6-overlay-$(cat /tmp/s6arch).tar.xz /tmp/
 
 RUN tar -C / -Jxpf /tmp/s6-overlay-noarch.tar.xz && \
-    tar -C / -Jxpf /tmp/s6-overlay-${S6_ARCH}.tar.xz && \
+    tar -C / -Jxpf /tmp/s6-overlay-$(cat /tmp/s6arch).tar.xz && \
     rm /tmp/*.tar.xz && \
     mkdir -p /run /data /etc/services.d
 
