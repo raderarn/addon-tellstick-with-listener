@@ -21,12 +21,12 @@ RUN echo 'Acquire::Check-Valid-Until "false";' \
 # Installera grundläggande verktyg (så du får wget, ca-certificates etc.)
 # ----------------------------------------------------------
 RUN apt-get update && apt-get install -y \
-      wget ca-certificates tar git xz-utils jq s6-overlay \
+      wget ca-certificates tar git xz-utils jq \
  && rm -rf /var/lib/apt/lists/*
 
-# ----------------------------------------------------------
-# Install Bashio (krävs för HA add-ons)
-# ----------------------------------------------------------
+ARG S6_VER=v3.2.0.2
+ADD https://github.com/just-containers/s6-overlay/releases/download/${S6_VER}/s6-overlay-amd64.tar.gz /tmp/
+RUN tar xzf /tmp/s6-overlay-amd64.tar.gz -C /
 
 # ----------------------------------------------------------
 # Install Bashio
