@@ -1,13 +1,12 @@
-#!/command/with-contenv bashio
+#!/usr/bin/with-contenv bash
 s6-setuidgid root
 
-if bashio::config.true "enable_local"; then
-bashio::log.info "Local enabled. Exposing sockets to HomeAssistant..."
-
-socat TCP-LISTEN:50800,reuseaddr,fork UNIX-CONNECT:/tmp/TelldusClient &
-socat TCP-LISTEN:50801,reuseaddr,fork UNIX-CONNECT:/tmp/TelldusEvents &
+# expose local sockets om användaren vill
+if [ "${enable_local:-false}" = "true" ]; then
+    echo "Local API enabled, exposing sockets"
+    socat TCP-LISTEN:50800,reuseaddr,fork UNIX-CONNECT:/tmp/TelldusClient &
+    socat TCP-LISTEN:50801,reuseaddr,fork UNIX-CONNECT:/tmp/TelldusEvents &
 fi
 
-bashio::log.info "Loading Telldus service..."
-
+echo "Starting telldusd"
 exec /usr/sbin/telldusd --nodaemon
