@@ -1,8 +1,10 @@
-ARG BUILD_FROM=ghcr.io/erik73/base-python/amd64:4.0.8
-# hadolint ignore=DL3006
+# ----------------------------------------------------------
+# Debian bas, Python, Telldus + Tellive + Python2
+# ----------------------------------------------------------
+
+ARG BUILD_FROM=debian:buster-slim
 FROM ${BUILD_FROM}
 
-# Set shell
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 ARG BUILD_ARCH
@@ -12,69 +14,80 @@ ARG BUILD_NAME
 ARG BUILD_REF
 ARG BUILD_REPOSITORY
 ARG BUILD_VERSION
-ENV LANG=C.UTF-8
 
-# Install Telldus library for TellStick (using same approach as in hassio docker installation)
-RUN apk add --no-cache \
-        confuse=3.3-r4 \
-        libftdi1=1.5-r4 \
-        libstdc++=14.2.0-r6 \
-        socat=1.8.0.3-r1 \
-    && apk add --no-cache --virtual .build-dependencies \
-        argp-standalone=1.5.0-r1 \
-        build-base=0.5-r3 \
-        cmake=3.31.7-r1 \
-        confuse-dev=3.3-r4 \
-        gcc=14.2.0-r6 \
-        git=2.49.1-r0 \
-        libftdi1-dev=1.5-r4 \
-    && ln -s /usr/include/libftdi1/ftdi.h /usr/include/ftdi.h \
-    && mkdir -p /usr/src \
-    && cd /usr/src \
-    && git clone -b master --depth 1 https://github.com/erik73/telldus \
-    && cd telldus/telldus-core \
-    && sed -i \
-        "/\<sys\/socket.h\>/a \#include \<sys\/select.h\>" \
-        common/Socket_unix.cpp \
-    && cmake . \
+ENV LANG=C.UTF-8 \
+    DEBIAN_FRONTEND=noninteractive
+
+RUN sed -i 's/deb.debian.org/archive.debian.org/g' /etc/apt/sources.list \
+ && sed -i 's/security.debian.org/archive.debian.org/g' /etc/apt/sources.list \
+ && echo "Acquire::Check-Valid-Until false;" > /etc/apt/apt.conf.d/99no-check
+
+# ----------------------------------------------------------
+# Install system packages
+# ----------------------------------------------------------
+
+RUN apt update && apt install -y \
+        git \
+        build-essential \
+        cmake \
+        pkg-config \
+        libftdi1 \
+        libftdi1-dev \
+        python3 \
+        python3-pip \
+        python2 \
+        python2-minimal \
+        python2-dev \
+        socat \
+    && rm -rf /var/lib/apt/lists/*
+
+# ----------------------------------------------------------
+# Build telldus-core
+# ----------------------------------------------------------
+
+RUN set -eux; \
+    git clone https://github.com/erik73/telldus.git /src/telldus; \
+    cd /src/telldus/telldus-core; \
+    git checkout v2.1.1; \
+    cmake . \
         -DBUILD_LIBTELLDUS-CORE=ON \
         -DBUILD_TDADMIN=OFF \
         -DBUILD_TDTOOL=ON \
         -DGENERATE_MAN=OFF \
-        -DFORCE_COMPILE_FROM_TRUNK=ON \
-        -DFTDI_LIBRARY=/usr/lib/libftdi1.so \
-    && make \
-    && make install \
-    && pip install --no-cache-dir \ 
-       tellcore-py \
-    && cd /usr/src/ \
-    && git clone -b master --depth 1 https://github.com/erijo/tellive-py \
-    && cd tellive-py \
-    && python setup.py install \
-    && apk del .build-dependencies \
-    && rm -rf /usr/src/telldus \
-    && rm -rf /usr/src/tellive-py \
-    && cd /
+        -DBUILD_FROM_TRUNK=ON \
+        -DWITH_X11=OFF \
+        -DWITH_MACOS=OFF \
+        -DWITH_WINDOWS=OFF ; \
+    make -j$(nproc); \
+    make install
 
-# Copy data for add-on
+# ----------------------------------------------------------
+# Install Python libs
+# ----------------------------------------------------------
+
+RUN pip3 install --no-cache-dir tellcore-py
+
+RUN cd /usr/src \
+    && git clone --depth 1 https://github.com/erijo/tellive-py.git \
+    && cd tellive-py \
+    && python3 setup.py install
+
+# ----------------------------------------------------------
+# Copy addon data
+# ----------------------------------------------------------
+
 COPY rootfs /
 
-# Labels
+# ----------------------------------------------------------
+# Metadata
+# ----------------------------------------------------------
+
 LABEL \
     io.hass.name="${BUILD_NAME}" \
     io.hass.description="${BUILD_DESCRIPTION}" \
     io.hass.arch="${BUILD_ARCH}" \
     io.hass.type="addon" \
     io.hass.version=${BUILD_VERSION} \
-    maintainer="Erik Hilton <erikhilton73@gmail.com>" \
-    org.opencontainers.image.title="${BUILD_NAME}" \
-    org.opencontainers.image.description="${BUILD_DESCRIPTION}" \
-    org.opencontainers.image.vendor="Erik73 Hassio-Addons" \
-    org.opencontainers.image.authors="Erik Hilton <erikhilton73@gmail.com>" \
-    org.opencontainers.image.licenses="MIT" \
-    org.opencontainers.image.url="https://github.com/erik73/hassio-addons" \
     org.opencontainers.image.source="https://github.com/${BUILD_REPOSITORY}" \
-    org.opencontainers.image.documentation="https://github.com/${BUILD_REPOSITORY}/blob/main/README.md" \
-    org.opencontainers.image.created=${BUILD_DATE} \
-    org.opencontainers.image.revision=${BUILD_REF} \
     org.opencontainers.image.version=${BUILD_VERSION}
+
