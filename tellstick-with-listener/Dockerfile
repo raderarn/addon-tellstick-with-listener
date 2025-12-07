@@ -41,6 +41,8 @@ RUN git clone https://github.com/hassio-addons/bashio.git /usr/local/lib/bashio 
     \
     chmod +x /usr/local/bin/*.sh /usr/local/bin/bashio
 
+COPY bashio /usr/lib/bashio/
+
 # ----------------------------------------------------------
 # Installera S6-overlay (fungerande version)
 # ----------------------------------------------------------
