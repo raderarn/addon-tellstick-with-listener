@@ -42,8 +42,8 @@ RUN mkdir -p /usr/local/bin && \
         ln -sf "$f" /usr/local/bin/$(basename "$f"); \
     done
 
-# symlink för bashio själv
-RUN ln -sf /usr/lib/bashio/bashio.sh /usr/local/bin/bashio
+RUN ln -sf /usr/lib/bashio/bashio.sh /usr/local/bin/bashio && \
+    chmod +x /usr/local/bin/bashio
 
 # ----------------------------------------------------------
 # Installera S6-overlay (fungerande version)
