@@ -10,10 +10,11 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 ENV LANG=C.UTF-8 \
     DEBIAN_FRONTEND=noninteractive
 
-# Redirect Bullseye → Buster + archive.debian.org
+# Force APT to use Buster + archive + remove missing security repo
 RUN sed -i 's|bullseye|buster|g' /etc/apt/sources.list \
  && sed -i 's|deb.debian.org|archive.debian.org|g' /etc/apt/sources.list \
  && sed -i 's|security.debian.org|archive.debian.org|g' /etc/apt/sources.list \
+ && sed -i '/security/d' /etc/apt/sources.list \
  && echo "Acquire::Check-Valid-Until false;" > /etc/apt/apt.conf.d/99no-check
 
 # Copy add-on rootfs into container
