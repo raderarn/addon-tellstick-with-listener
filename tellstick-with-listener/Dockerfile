@@ -21,7 +21,7 @@ RUN echo 'Acquire::Check-Valid-Until "false";' \
 # Installera grundläggande verktyg (så du får wget, ca-certificates etc.)
 # ----------------------------------------------------------
 RUN apt-get update && apt-get install -y \
-      wget ca-certificates tar git xz-utils \
+      wget ca-certificates tar git xz-utils jq \
  && rm -rf /var/lib/apt/lists/*
 
 # ----------------------------------------------------------
