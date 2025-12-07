@@ -1,0 +1,2 @@
+#!/usr/bin/with-contenv bash
+exec python2 /usr/local/bin/tdtool-improved.py -t
