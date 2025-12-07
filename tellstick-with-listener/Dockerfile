@@ -1,76 +1,89 @@
-#-----------------------------------------------------------
-# Home Assistant Debian base (Bullseye runtime)
-# Force APT to use Debian Buster Archive
-#-----------------------------------------------------------
+# ----------------------------------------------------------
+# Debian Buster + Telldus + Python2/3 + S6-overlay
+# ----------------------------------------------------------
 
-FROM ghcr.io/home-assistant/amd64-base-debian:bullseye
+FROM debian:buster
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 ENV LANG=C.UTF-8 \
     DEBIAN_FRONTEND=noninteractive
 
-# Force APT to use Buster + archive + remove missing security repo
-RUN sed -i 's|bullseye|buster|g' /etc/apt/sources.list \
- && sed -i 's|deb.debian.org|archive.debian.org|g' /etc/apt/sources.list \
- && sed -i 's|security.debian.org|archive.debian.org|g' /etc/apt/sources.list \
- && sed -i '/security/d' /etc/apt/sources.list \
- && echo "Acquire::Check-Valid-Until false;" > /etc/apt/apt.conf.d/99no-check
+# ----------------------------------------------------------
+# Basic system + build deps
+# ----------------------------------------------------------
 
-# Copy add-on rootfs into container
+RUN apt-get update && apt-get install -y \
+    curl ca-certificates gnupg \
+    git build-essential cmake pkg-config \
+    libftdi1 libftdi1-dev \
+    python2 python2-minimal python2-dev \
+    python3 python3-pip \
+    wget socat \
+ && rm -rf /var/lib/apt/lists/*
+
+# ----------------------------------------------------------
+# Install S6-overlay (required for HA addons)
+# ----------------------------------------------------------
+
+ARG S6_VER=3.1.6.2
+
+ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_VER}/s6-overlay-amd64.tar.gz /tmp/s6.tar.gz
+RUN tar xzf /tmp/s6.tar.gz -C / \
+ && rm /tmp/s6.tar.gz
+
+RUN mkdir -p /run /data /etc/services.d
+
+# ----------------------------------------------------------
+# Addon files
+# ----------------------------------------------------------
+
 COPY rootfs/ /
+
 RUN chmod +x /usr/local/bin/td.py /usr/local/bin/tdtool-improved.py
 
-# Install libconfuse0 manually
+# ----------------------------------------------------------
+# Install old libconfuse required by telldus-core
+# ----------------------------------------------------------
+
 ADD http://ftp.bme.hu/debian-archive/debian-amd64/pool/main/c/confuse/libconfuse0_2.5-1_amd64.deb /tmp/libconfuse.deb
 RUN dpkg -i /tmp/libconfuse.deb || apt-get -f install -y
 
-# Update and install dependencies
-RUN apt update && \
-    apt upgrade -y && \
-    apt install -y \
-        git \
-        build-essential \
-        cmake \
-        pkg-config \
-        libftdi1 \
-        libftdi1-dev \
-        python3 \
-        python3-pip \
-        python2 \
-        python2-minimal \
-        python2-dev \
-        wget \
-        socat && \
-    rm -rf /var/lib/apt/lists/*
+# ----------------------------------------------------------
+# Telldus apt repo
+# ----------------------------------------------------------
 
-# Telldus key
 RUN wget -O- http://download.telldus.com/debian/telldus-public.key \
     | gpg --dearmor \
     > /usr/share/keyrings/telldus.gpg
 
-# Add Telldus repo
 RUN echo "deb [signed-by=/usr/share/keyrings/telldus.gpg] http://download.telldus.com/debian/ stable main" \
     > /etc/apt/sources.list.d/telldus.list
 
-# Install Telldus-core
-RUN apt update && \
-    apt install -y \
-        telldus-core \
-        libtelldus-core2 \
-        libtelldus-core-dev && \
-    apt clean && \
-    rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y \
+    telldus-core libtelldus-core2 libtelldus-core-dev \
+ && rm -rf /var/lib/apt/lists/*
 
-# Install Python libs
+# ----------------------------------------------------------
+# Python libs
+# ----------------------------------------------------------
+
 RUN pip3 install --no-cache-dir tellcore-py
 
 RUN cd /usr/src \
-    && git clone --depth 1 https://github.com/erijo/tellive-py.git \
-    && cd tellive-py \
-    && python3 setup.py install
+ && git clone --depth 1 https://github.com/erijo/tellive-py.git \
+ && cd tellive-py \
+ && python3 setup.py install
 
-# Copy addon data
-COPY rootfs /
+# ----------------------------------------------------------
+# Python2 symlinks (som du hade)
+# ----------------------------------------------------------
+
 RUN ln -s /usr/local/bin/td.py /usr/local/lib/python2.7/dist-packages/td.py && \
     ln -s /usr/local/bin/tdtool-improved.py /usr/local/lib/python2.7/dist-packages/tdtool_improved.py
+
+# ----------------------------------------------------------
+# Required for HA addon
+# ----------------------------------------------------------
+
+ENTRYPOINT ["/init"]
