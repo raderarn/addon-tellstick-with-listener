@@ -25,6 +25,13 @@ RUN apt-get update && apt-get install -y \
  && rm -rf /var/lib/apt/lists/*
 
 # ----------------------------------------------------------
+# Install bashio (Home Assistant addon helper library)
+# ----------------------------------------------------------
+RUN wget -O /usr/bin/bashio \
+    https://github.com/hassio-addons/bashio/releases/latest/download/bashio && \
+    chmod +x /usr/bin/bashio
+
+# ----------------------------------------------------------
 # Installera S6-overlay (fungerande version)
 # ----------------------------------------------------------
 ARG S6_VER=3.2.1.0
