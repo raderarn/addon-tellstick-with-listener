@@ -1,4 +1,6 @@
-#!/command/with-contenv bashio
+#!/command/with-contenv bash
+# Load bashio library manually
+source /usr/local/lib/bashio/lib/bashio.sh
 
 # This script will create the config file needed to connect to start telldusd
 
