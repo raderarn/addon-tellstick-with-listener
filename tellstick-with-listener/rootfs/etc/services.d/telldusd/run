@@ -1,4 +1,4 @@
-#!/usr/bin/with-contenv bash
+#!/usr/bin/env bash
 s6-setuidgid root
 
 # expose local sockets om användaren vill
