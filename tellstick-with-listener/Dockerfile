@@ -4,6 +4,19 @@
 
 FROM debian:buster
 
+# ----------------------------------------------------------
+# Basic deps
+# ----------------------------------------------------------
+
+RUN apt-get update && apt-get install -y \
+    curl ca-certificates gnupg \
+    git build-essential cmake pkg-config \
+    libftdi1 libftdi1-dev \
+    python2 python2-minimal python2-dev \
+    python3 python3-pip \
+    wget socat \
+ && rm -rf /var/lib/apt/lists/*
+
 ARG BUILD_ARCH
 ARG S6_VER=3.2.0.9
 
@@ -24,18 +37,6 @@ RUN case "$BUILD_ARCH" in \
     rm /tmp/s6.tar.xz && \
     mkdir -p /run /data /etc/services.d
 
-# ----------------------------------------------------------
-# Basic deps
-# ----------------------------------------------------------
-
-RUN apt-get update && apt-get install -y \
-    curl ca-certificates gnupg \
-    git build-essential cmake pkg-config \
-    libftdi1 libftdi1-dev \
-    python2 python2-minimal python2-dev \
-    python3 python3-pip \
-    wget socat \
- && rm -rf /var/lib/apt/lists/*
 
 # ----------------------------------------------------------
 # Addon files
