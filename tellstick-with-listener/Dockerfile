@@ -23,14 +23,16 @@ RUN apt-get update && apt-get install -y \
  && rm -rf /var/lib/apt/lists/*
 
 # ----------------------------------------------------------
-# Install S6-overlay (required for HA addons)
+# Install S6-overlay
 # ----------------------------------------------------------
 
-ARG S6_VER=3.1.6.2
+ARG S6_VER=3.2.0.2
 
-ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_VER}/s6-overlay-amd64.tar.gz /tmp/s6.tar.gz
+ADD https://github.com/just-containers/s6-overlay/releases/download/v${S6_VER}/s6-overlay-${BUILD_ARCH}.tar.gz /tmp/s6.tar.gz
+
 RUN tar xzf /tmp/s6.tar.gz -C / \
- && rm /tmp/s6.tar.gz
+ && rm /tmp/s6.tar.gz \
+ && mkdir -p /run /data /etc/services.d
 
 RUN mkdir -p /run /data /etc/services.d
 
