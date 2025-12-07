@@ -1,5 +1,5 @@
 build_from:
-  amd64: debian:buster-slim
-  armhf: debian:buster-slim
-  armv7: debian:buster-slim
-  aarch64: debian:buster-slim
+  amd64: docker.io/debian:buster
+  armhf: docker.io/debian:buster
+  armv7: docker.io/debian:buster
+  aarch64: docker.io/debian:buster
