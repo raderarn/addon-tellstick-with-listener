@@ -21,15 +21,15 @@ RUN echo 'Acquire::Check-Valid-Until "false";' \
 # Installera grundläggande verktyg (så du får wget, ca-certificates etc.)
 # ----------------------------------------------------------
 RUN apt-get update && apt-get install -y \
-      wget ca-certificates tar xz-utils \
+      wget ca-certificates tar git xz-utils \
  && rm -rf /var/lib/apt/lists/*
 
 # ----------------------------------------------------------
 # Install bashio (Home Assistant addon helper library)
 # ----------------------------------------------------------
-RUN wget -O /usr/bin/bashio \
-    https://github.com/hassio-addons/bashio/releases/latest/download/bashio && \
-    chmod +x /usr/bin/bashio
+RUN git clone https://github.com/hassio-addons/bashio.git /tmp/bashio \
+  && cp /tmp/bashio/lib/bashio.sh /usr/bin/bashio \
+  && chmod +x /usr/bin/bashio
 
 # ----------------------------------------------------------
 # Installera S6-overlay (fungerande version)
