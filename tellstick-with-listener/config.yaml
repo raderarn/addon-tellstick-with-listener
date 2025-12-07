@@ -1,9 +1,9 @@
 ---
-name: TellStick with Telldus Live
+name: TellStick with listener
 version: dev
-slug: tellsticklive
-description: TellStick and TellStick Duo service with Telldus Live
-url: https://github.com/erik73/hassio-addons
+slug: tellstickwithlistener
+description: TellStick and TellStick Duo service with listnener
+url: https://github.com/raderarn/addon-tellstick-with-listener
 arch:
   - aarch64
   - amd64
